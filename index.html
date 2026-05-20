@@ -1,0 +1,428 @@
+```html
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cyber Binary Search Game</title>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      min-height: 100vh;
+      font-family: "Segoe UI", Arial, sans-serif;
+      background:
+        radial-gradient(circle at top, #12213d 0%, #050816 45%, #02030a 100%);
+      color: #e6f7ff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 30px;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(0,255,255,0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,255,255,0.05) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+    }
+
+    h1 {
+      font-size: 42px;
+      letter-spacing: 4px;
+      color: #67f7ff;
+      text-shadow:
+        0 0 10px #00eaff,
+        0 0 20px #00eaff,
+        0 0 40px #00eaff;
+      margin-bottom: 12px;
+    }
+
+    .description {
+      color: #8edfff;
+      margin-bottom: 24px;
+      text-align: center;
+      font-size: 16px;
+      letter-spacing: 1px;
+    }
+
+    .panel {
+      width: 100%;
+      max-width: 900px;
+      background: rgba(8, 16, 35, 0.75);
+      border: 1px solid rgba(0,255,255,0.25);
+      border-radius: 20px;
+      padding: 25px;
+      backdrop-filter: blur(10px);
+      box-shadow:
+        0 0 20px rgba(0,255,255,0.15),
+        inset 0 0 20px rgba(0,255,255,0.05);
+    }
+
+    #message {
+      min-height: 40px;
+      text-align: center;
+      font-size: 24px;
+      font-weight: bold;
+      margin-bottom: 15px;
+      letter-spacing: 1px;
+    }
+
+    #rangeInfo {
+      text-align: center;
+      margin-bottom: 25px;
+      color: #7be8ff;
+      font-size: 18px;
+      letter-spacing: 2px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(10, 1fr);
+      gap: 12px;
+    }
+
+    .number {
+      aspect-ratio: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 14px;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+
+      background: rgba(0, 20, 40, 0.9);
+      border: 1px solid rgba(0,255,255,0.25);
+
+      color: #8efcff;
+      font-size: 18px;
+      font-weight: bold;
+
+      transition: all 0.25s ease;
+      box-shadow:
+        inset 0 0 10px rgba(0,255,255,0.08),
+        0 0 8px rgba(0,255,255,0.08);
+    }
+
+    .number::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        135deg,
+        rgba(255,255,255,0.15),
+        transparent 45%
+      );
+      pointer-events: none;
+    }
+
+    .number:hover {
+      transform: translateY(-4px) scale(1.05);
+      border-color: #67f7ff;
+      color: white;
+      box-shadow:
+        0 0 15px #00eaff,
+        0 0 30px rgba(0,234,255,0.4),
+        inset 0 0 15px rgba(0,255,255,0.2);
+    }
+
+    .active {
+      background: linear-gradient(135deg, #00eaff, #0077ff) !important;
+      color: white !important;
+      border-color: #8cf8ff !important;
+
+      box-shadow:
+        0 0 20px #00eaff,
+        0 0 40px rgba(0,234,255,0.8);
+    }
+
+    .correct {
+      background: linear-gradient(135deg, #00ff9d, #00c853) !important;
+      color: white !important;
+      border-color: #7fffd4 !important;
+
+      transform: scale(1.1);
+
+      box-shadow:
+        0 0 20px #00ff9d,
+        0 0 50px rgba(0,255,157,0.9);
+    }
+
+    .eliminated {
+      opacity: 0.12;
+      filter: grayscale(1);
+      transform: scale(0.96);
+      cursor: not-allowed;
+
+      box-shadow: none;
+    }
+
+    .controls {
+      display: flex;
+      justify-content: center;
+      margin-top: 28px;
+    }
+
+    button {
+      padding: 14px 30px;
+      border: none;
+      border-radius: 14px;
+
+      background: linear-gradient(135deg, #00d9ff, #0066ff);
+      color: white;
+
+      font-size: 16px;
+      font-weight: bold;
+      letter-spacing: 1px;
+
+      cursor: pointer;
+      transition: 0.25s ease;
+
+      box-shadow:
+        0 0 15px rgba(0,234,255,0.5);
+    }
+
+    button:hover {
+      transform: translateY(-3px) scale(1.04);
+
+      box-shadow:
+        0 0 25px rgba(0,234,255,0.9),
+        0 0 45px rgba(0,234,255,0.5);
+    }
+
+    .hud {
+      display: flex;
+      justify-content: center;
+      gap: 25px;
+      margin-bottom: 22px;
+      flex-wrap: wrap;
+    }
+
+    .hud-card {
+      min-width: 180px;
+      padding: 14px 20px;
+      border-radius: 14px;
+
+      background: rgba(0,20,40,0.7);
+      border: 1px solid rgba(0,255,255,0.2);
+
+      text-align: center;
+
+      box-shadow:
+        inset 0 0 12px rgba(0,255,255,0.08);
+    }
+
+    .hud-label {
+      color: #6fdfff;
+      font-size: 13px;
+      letter-spacing: 2px;
+      margin-bottom: 8px;
+    }
+
+    .hud-value {
+      color: white;
+      font-size: 28px;
+      font-weight: bold;
+      text-shadow: 0 0 10px rgba(0,255,255,0.5);
+    }
+
+    @media (max-width: 768px) {
+      .grid {
+        grid-template-columns: repeat(5, 1fr);
+      }
+
+      h1 {
+        font-size: 30px;
+      }
+
+      .number {
+        font-size: 16px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <h1>CYBER SEARCH</h1>
+
+  <div class="description">
+    點擊數字進行猜測，視覺化體驗 Binary Search 的縮圈演算法
+  </div>
+
+  <div class="panel">
+
+    <div class="hud">
+      <div class="hud-card">
+        <div class="hud-label">ATTEMPTS</div>
+        <div class="hud-value" id="attempts">0</div>
+      </div>
+
+      <div class="hud-card">
+        <div class="hud-label">SEARCH RANGE</div>
+        <div class="hud-value" id="rangeDisplay">1 ~ 100</div>
+      </div>
+    </div>
+
+    <div id="message"></div>
+
+    <div id="rangeInfo">
+      SYSTEM READY
+    </div>
+
+    <div class="grid" id="numberGrid"></div>
+
+    <div class="controls">
+      <button id="restartBtn">RESTART SYSTEM</button>
+    </div>
+
+  </div>
+
+  <script>
+    const grid = document.getElementById("numberGrid");
+    const message = document.getElementById("message");
+    const rangeInfo = document.getElementById("rangeInfo");
+    const restartBtn = document.getElementById("restartBtn");
+    const attemptsText = document.getElementById("attempts");
+    const rangeDisplay = document.getElementById("rangeDisplay");
+
+    let target;
+    let attempts;
+    let low;
+    let high;
+    let gameOver;
+
+    function createGrid() {
+
+      grid.innerHTML = "";
+
+      for (let i = 1; i <= 100; i++) {
+
+        const cell = document.createElement("div");
+
+        cell.className = "number";
+        cell.id = `num-${i}`;
+        cell.textContent = i;
+
+        cell.addEventListener("click", () => {
+          handleGuess(i);
+        });
+
+        grid.appendChild(cell);
+      }
+    }
+
+    function initGame() {
+
+      target = Math.floor(Math.random() * 100) + 1;
+
+      attempts = 0;
+      low = 1;
+      high = 100;
+      gameOver = false;
+
+      attemptsText.textContent = attempts;
+      rangeDisplay.textContent = `${low} ~ ${high}`;
+
+      message.textContent = "";
+      rangeInfo.textContent = "SYSTEM READY";
+
+      document.querySelectorAll(".number").forEach(cell => {
+        cell.className = "number";
+      });
+    }
+
+    function updateVisualization(currentGuess = null, isCorrect = false) {
+
+      for (let i = 1; i <= 100; i++) {
+
+        const cell = document.getElementById(`num-${i}`);
+
+        cell.classList.remove("active", "correct", "eliminated");
+
+        if (i < low || i > high) {
+          cell.classList.add("eliminated");
+        }
+
+        if (i === currentGuess && !isCorrect) {
+          cell.classList.add("active");
+        }
+
+        if (i === currentGuess && isCorrect) {
+          cell.classList.add("correct");
+        }
+      }
+
+      rangeDisplay.textContent = `${low} ~ ${high}`;
+    }
+
+    function handleGuess(guess) {
+
+      if (gameOver) return;
+
+      if (guess < low || guess > high) return;
+
+      attempts++;
+      attemptsText.textContent = attempts;
+
+      if (guess < target) {
+
+        message.textContent = "TARGET HIGHER";
+        message.style.color = "#ffb84d";
+
+        rangeInfo.textContent =
+          `ELIMINATING ${low} ~ ${guess}`;
+
+        low = guess + 1;
+
+        updateVisualization(guess);
+
+      }
+      else if (guess > target) {
+
+        message.textContent = "TARGET LOWER";
+        message.style.color = "#ff6b6b";
+
+        rangeInfo.textContent =
+          `ELIMINATING ${guess} ~ ${high}`;
+
+        high = guess - 1;
+
+        updateVisualization(guess);
+
+      }
+      else {
+
+        gameOver = true;
+
+        message.textContent = "BINGO! TARGET ACQUIRED";
+        message.style.color = "#00ff9d";
+
+        rangeInfo.textContent =
+          `MISSION COMPLETE IN ${attempts} ATTEMPTS`;
+
+        updateVisualization(guess, true);
+      }
+    }
+
+    restartBtn.addEventListener("click", initGame);
+
+    createGrid();
+    initGame();
+
+  </script>
+
+</body>
+</html>
+```
